@@ -1,8 +1,8 @@
-# Implementation of SparseKernekHC
-# each value in similarity matrix is stored as a triple:
-# ind.row, ind.col, val 
+# Implementation of SparseKernelHC
+# similarity matrix is formatted in sparse way: i.e
+# each value is represented by a triple (ind.row, ind.vol, val)
 
-#############################################################
+######################################################## 
 
 sp_lw_update_rule = function(Di,Dj,Dx,k,l,method,c)
 {
@@ -18,11 +18,11 @@ sp_lw_update_rule = function(Di,Dj,Dx,k,l,method,c)
   list_id=rownames(c)
   id.ik=which(Di==k)#k is involved as a row
   id.jk=which(Dj==k)#k is involved as a column
-#   max.id=max(Dj[id.ik],Di[id.jk])#search for max id
+
   Dk=cbind(c(Dj[id.ik],Di[id.jk]),c(Dx[id.ik],Dx[id.jk]))#distance row of k
   id.il=which(Di==l)#l is involved as a row
   id.jl=which(Dj==l)#l is involved as a column
-#   max.id=max(max.id,Dj[id.il],Di[id.jl])#search for max id
+
   max.id=max(as.integer(list_id))
   Dl=cbind(c(Dj[id.il],Di[id.jl]),c(Dx[id.il],Dx[id.jl]))#distance row of k
   Dkl=Dx[intersect(id.ik,id.jl)]#Dkl value to be used afterwards
@@ -33,7 +33,7 @@ sp_lw_update_rule = function(Di,Dj,Dx,k,l,method,c)
   ll=which(list_id==l)
   ck=c[kk]
   cl=c[ll]
-  switch(method,#en fonction de la méthode on a la LW formule pour ws
+  switch(method,
          "single"={w=c(0.5,0.5,0,-0.5)},
          "complete"={w=c(0.5,0.5,0,0.5)},
          "average"={w=c(ck/(ck+cl),cl/(ck+cl),0,0)},
@@ -42,7 +42,7 @@ sp_lw_update_rule = function(Di,Dj,Dx,k,l,method,c)
          "centroid"={w=c(ck/(ck+cl),cl/(ck+cl),-(ck*cl)/(ck+cl)^2,0)}
   )
   #compute the new row
-  if (method=="ward")#cas spécifique de ward
+  if (method=="ward")
   {
     cck=spMatrix(nrow=1, ncol=max.id+1, i=rep(1,nrow(c)), j=as.integer(list_id)+1, x=(c+ck)/(c+ck+cl))
     ccl=spMatrix(nrow=1, ncol=max.id+1, i=rep(1,nrow(c)), j=as.integer(list_id)+1, x=(c+cl)/(c+ck+cl))
@@ -73,7 +73,7 @@ sp_lw_update_rule = function(Di,Dj,Dx,k,l,method,c)
     Dni[find.switch]=Dnj[find.switch]
     Dnj[find.switch]=k
   }
-  if (length(Dn)==1)#cas où un seul élément qui reste
+  if (length(Dn)==1)
   {
     Di=k
     Dj=k
@@ -86,8 +86,8 @@ sp_lw_update_rule = function(Di,Dj,Dx,k,l,method,c)
     Dx=c(Dx,Dnx)
   }
   c[kk]=c[kk]+c[ll]
-  c=as.matrix(c[-ll],ncol=1)#maj de c
-  rownames(c)=list_id[-ll]#bizarerie de r
+  c=as.matrix(c[-ll],ncol=1)
+  rownames(c)=list_id[-ll]
   return(list(Di=Di,Dj=Dj,Dx=Dx,c=c))
 }
 
@@ -100,28 +100,27 @@ sp_ahc = function(Di,Dj,Dx,nb_ind,method)
   #OUTPUT
   #dend, mat ((n-1)x3): two clusters ids that are merged, height
   library("Matrix")
-  list_id=0:(nb_ind-1)#liste des clusters id actifs
-  dend=matrix(0,ncol=3,nrow=nb_ind-1)#initialisation du dendogramme
-  c=matrix(1,nrow=nb_ind,ncol=1)#initialisation de la taille des clusters
-  rownames(c)=list_id#même liste de clusters id
+  list_id=0:(nb_ind-1)
+  c=matrix(1,nrow=nb_ind,ncol=1)
+  rownames(c)=list_id
   cpt=1
-  while (cpt<nb_ind)#on sait qu'il y a n-1 arrête dans l'arbre
+  while (cpt<nb_ind)
   {
-    ind.d.min=which.min(Dx)#recherche des clusters id à grouper
+    ind.d.min=which.min(Dx)
     height=Dx[ind.d.min]
     cl_to_merge=c(min(Di[ind.d.min],Dj[ind.d.min]),max(Di[ind.d.min],Dj[ind.d.min]))
-    res=sp_lw_update_rule(Di,Dj,Dx,cl_to_merge[1],cl_to_merge[2],method,c)#maj matrice distance
+    res=sp_lw_update_rule(Di,Dj,Dx,cl_to_merge[1],cl_to_merge[2],method,c)
     Di=res$Di;
     Dj=res$Dj;
     Dx=res$Dx;
     c=res$c;
-    dend[cpt,]=c(cl_to_merge+1,height)#on stocke les id des clusters groupés, la distance ultramétrique et la taille du cluster groupé
+    dend[cpt,]=c(cl_to_merge+1,height)
     cpt=cpt+1
   }
   return(cbind(dend,as.numeric(object.size(Di))+as.numeric(object.size(Dj))+as.numeric(object.size(Dx))))
 }
 
-#[150907] KERNELISATION DE LW ET AHC AVEC FORMAT SPARSE--------------------------------------------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------
 
 sp_kernel_lw_update_rule = function(Si,Sj,Sx,Sd,k,l,method,c)
 {
@@ -137,11 +136,11 @@ sp_kernel_lw_update_rule = function(Si,Sj,Sx,Sd,k,l,method,c)
   list_id=rownames(c)
   id.ik=which(Si==k)#k is involved as a row
   id.jk=which(Sj==k)#k is involved as a column
-#   max.id=max(Sj[id.ik],Si[id.jk])#search for max id
+
   Sk=cbind(c(Sj[id.ik],Si[id.jk]),c(Sx[id.ik],Sx[id.jk]))#similarity row of k
   id.il=which(Si==l)#l is involved as a row
   id.jl=which(Sj==l)#l is involved as a column
-#   max.id=max(max.id,Sj[id.il],Si[id.jl])#search for max id
+
   max.id=max(as.integer(list_id))
   Sl=cbind(c(Sj[id.il],Si[id.jl]),c(Sx[id.il],Sx[id.jl]))#similarity row of k
   Skl=Sx[intersect(id.ik,id.jl)]#Skl value to be used afterwards
@@ -155,7 +154,7 @@ sp_kernel_lw_update_rule = function(Si,Sj,Sx,Sd,k,l,method,c)
   Skk=Sd[kk]#Skk value to be used afterwards
   Sll=Sd[ll]#Sll value to be used afterwards
   #===
-  switch(method,#en fonction de la méthode on a la LW formule pour ws
+  switch(method,
          "single"={w=c(0.5,0.5,0.5,0.5,0.5,0)},
          "complete"={w=c(0.5,0.5,-0.5,0.5,0.5,0)},
          "average"={w=c(ck/(ck+cl),cl/(ck+cl),0,ck/(ck+cl),cl/(ck+cl),0)},
@@ -164,8 +163,8 @@ sp_kernel_lw_update_rule = function(Si,Sj,Sx,Sd,k,l,method,c)
          "centroid"={w=c(ck/(ck+cl),cl/(ck+cl),0,(ck/(ck+cl))^2,(cl/(ck+cl))^2,2*(ck*cl)/(ck+cl)^2)},
          "ward"={w=c(ck/(ck+cl),cl/(ck+cl),0,(ck/(ck+cl))^2,(cl/(ck+cl))^2,2*(ck*cl)/(ck+cl)^2)}
   )
-  Sn=w[1]*Sk+w[2]*Sl+w[3]*abs(Sk-Sl)#formule pour les similarités (1)
-  Snn=w[4]*Skk+w[5]*Sll+w[6]*Skl#formule pour les normes (2)
+  Sn=w[1]*Sk+w[2]*Sl+w[3]*abs(Sk-Sl)
+  Snn=w[4]*Skk+w[5]*Sll+w[6]*Skl
   #remove from previous values the obsolete row
   Si=Si[-all.id]
   Sj=Sj[-all.id]
@@ -174,9 +173,9 @@ sp_kernel_lw_update_rule = function(Si,Sj,Sx,Sd,k,l,method,c)
   Sn=as(Sn,"dgTMatrix")
   Snj=Sn@j
   Snx=Sn@x
-  del.id.k=which(Snj==k)#remove k in the new row
-  del.id.l=which(Snj==l)#remove l in the new row
-  del.non.activ.id=which(!is.element(Snj,list_id))#remove sparse element in the new row
+  del.id.k=which(Snj==k)
+  del.id.l=which(Snj==l)
+  del.non.activ.id=which(!is.element(Snj,list_id))
   Snj=Snj[-c(del.id.k,del.id.l,del.non.activ.id)]
   Snx=Snx[-c(del.id.k,del.id.l,del.non.activ.id)]
   Sni=rep(k,length(Snj))
@@ -186,7 +185,7 @@ sp_kernel_lw_update_rule = function(Si,Sj,Sx,Sd,k,l,method,c)
     Sni[find.switch]=Snj[find.switch]
     Snj[find.switch]=k
   }
-  if (length(Sn)==1)#cas où un seul élément qui reste
+  if (length(Sn)==1)
   {
     Si=k
     Sj=k
@@ -202,8 +201,8 @@ sp_kernel_lw_update_rule = function(Si,Sj,Sx,Sd,k,l,method,c)
     Sd=Sd[-ll]
   }
   c[kk]=c[kk]+c[ll]
-  c=as.matrix(c[-ll],ncol=1)#maj de c
-  rownames(c)=list_id[-ll]#bizarerie de r
+  c=as.matrix(c[-ll],ncol=1)
+  rownames(c)=list_id[-ll]
   return(list(Si=Si,Sj=Sj,Sx=Sx,Sd=Sd,c=c))
 }
 
@@ -234,7 +233,7 @@ sp_kernel_lw_merge_rule = function(Si,Sj,Sx,Sd,method,c)
   )
   SSd=spMatrix(nrow=1, ncol=max.id+1, i=rep(1,length(list_id)), j=as.integer(list_id)+1, x=Sd)
   S=p*Sx+m*(SSd[Si+1]+SSd[Sj+1])
-  max.ind=which.max(S)#recherche de maximum
+  max.ind=which.max(S)
   m=S[max.ind]
   return(c(Si[max.ind],Sj[max.ind],m))  
 }
@@ -248,22 +247,22 @@ sp_kernel_ahc = function(Si,Sj,Sx,Sd,method)
   #OUTPUT
   #dend, mat ((n-1)x4): two clusters ids that are merged, height, size of S
   library("Matrix")
-  nb_ind=length(Sd)#nombre d'individus
-  list_id=0:(nb_ind-1)#liste des clusters id actifs
-  dend=matrix(0,ncol=4,nrow=nb_ind-1)#initialisation du dendogramme
-  c=matrix(1,nrow=nb_ind,ncol=1)#initialisation de la taille des clusters
-  rownames(c)=list_id#même liste de clusters id
+  nb_ind=length(Sd)
+  list_id=0:(nb_ind-1)
+  dend=matrix(0,ncol=4,nrow=nb_ind-1)
+  c=matrix(1,nrow=nb_ind,ncol=1)
+  rownames(c)=list_id
   cpt=1
-  while (cpt<(nb_ind) && length(Sx)>0)#on sait qu'il y a n-1 arrête dans l'arbre
+  while (cpt<(nb_ind) && length(Sx)>0)
   {
-    cl_to_merge=sp_kernel_lw_merge_rule(Si,Sj,Sx,Sd,method,c)#recherche des clusters id à grouper
-    res=sp_kernel_lw_update_rule(Si,Sj,Sx,Sd,cl_to_merge[1],cl_to_merge[2],method,c)#maj matrice distance
+    cl_to_merge=sp_kernel_lw_merge_rule(Si,Sj,Sx,Sd,method,c)
+    res=sp_kernel_lw_update_rule(Si,Sj,Sx,Sd,cl_to_merge[1],cl_to_merge[2],method,c)
     Si=res$Si;
     Sj=res$Sj;
     Sx=res$Sx;
     Sd=res$Sd;
     c=res$c;
-    dend[cpt,]=c(cl_to_merge[1]+1,cl_to_merge[2]+1,cl_to_merge[3],as.numeric(object.size(Si))+as.numeric(object.size(Sj))+as.numeric(object.size(Sx))+as.numeric(object.size(Sd)))#on stocke les id des clusters groupés, la distance ultramétrique et la taille du cluster groupé
+    dend[cpt,]=c(cl_to_merge[1]+1,cl_to_merge[2]+1,cl_to_merge[3],as.numeric(object.size(Si))+as.numeric(object.size(Sj))+as.numeric(object.size(Sx))+as.numeric(object.size(Sd)))
     cpt=cpt+1
   }
   return(dend)
@@ -358,7 +357,7 @@ cophenetic_correlation = function(C1,C2)
   return(cor(C1[upper.tri(C1)],C2[upper.tri(C2)]))
 }
 
-#[150519]
+
 cut_dend = function(dend,k)
 {
   #Cut the dendogram in order to have an assignment matrix that represents a flat partition
@@ -411,7 +410,8 @@ convert_dend = function(dend,list_id,k)
   }
   return(res)
 } 
-# parVapply() w/o thresholds -----------------------------------------
+
+# parVapply() w/o thresholds ----------------
 # ARI_SPkerAHC = function(m)
 # { 
 #   dend = sp_kernel_ahc(Si,Sj,Sx,Sd,m)
@@ -420,12 +420,10 @@ convert_dend = function(dend,list_id,k)
 #   return(ARI)
 # }
 
-# parVapply() with thresholds ----------------------------------------
+# parVapply() with thresholds -------------
+
 ARI_SPkerAHC = function(si,sj,sx,m)
 {
-#   dend = sp_kernel_ahc(si,sj,sx,Sd,m)
-#   pre_tags = convert_dend(dend,list_id,15)
-#   ARI = adjustedRandIndex(label, pre_tags)
   dend = sp_kernel_ahc(si,sj,sx,Sd,m)
   pre_tags = convert_dend(dend,list_id,2)
   ARI = adjustedRandIndex(c_y, pre_tags)
@@ -440,30 +438,4 @@ with_thre = function(s)
   sx = Sx[filt.id]
   get_ARI_SPkerAHC <- sapply(methL, function(m) ARI_SPkerAHC(si,sj,sx,m))
   return(get_ARI_SPkerAHC)
-}
-
-# for experimetns in "~/R_dir_dec/exp_2ndRound_forLatex/quality_2" --- :
-par_SPkerARI = function(m){    
-  SPahc = sp_kernel_ahc(Si,Sj,Sx,Sd,m)
-  pre_tags = convert_dend(SPahc,list_id,k)
-  ARI = adjustedRandIndex(lb, pre_tags)
-  return(ARI)
-}
-
-# for experiments in "~/R_dir_dec/exp_2ndRound_forLatex/scalability_1" ---: 
-ARI_SPkerAHC = function(m)
-{ 
-  s = 0.8
-  filt.id=which(Sx>=s)
-  si=Si[filt.id]
-  sj=Sj[filt.id]
-  sx=Sx[filt.id]
-  SIZE_af = object.size(si)+object.size(sj)+object.size(sx)
-  per_del = 1.0 - as.numeric(SIZE_af)/as.numeric(SIZE_bf)
-  start = proc.time()
-  dend = sp_kernel_ahc(si,sj,sx,Sd,m)
-  dur = proc.time() - start
-  pre_tags = convert_dend(dend,list_id,k)
-  ARI = adjustedRandIndex(lb, pre_tags)
-  return(cbind(s=s, m=m, per_del=per_del, ARI=ARI, SIZE=as.numeric(SIZE_af)/1000000,dur=as.numeric(dur[3])))
 }

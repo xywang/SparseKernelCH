@@ -439,29 +439,3 @@ with_thre = function(s)
   get_ARI_SPkerAHC <- sapply(methL, function(m) ARI_SPkerAHC(si,sj,sx,m))
   return(get_ARI_SPkerAHC)
 }
-
-# for experimetns in "~/R_dir_dec/exp_2ndRound_forLatex/quality_2" --- :
-par_SPkerARI = function(m){    
-  SPahc = sp_kernel_ahc(Si,Sj,Sx,Sd,m)
-  pre_tags = convert_dend(SPahc,list_id,k)
-  ARI = adjustedRandIndex(lb, pre_tags)
-  return(ARI)
-}
-
-# for experiments in "~/R_dir_dec/exp_2ndRound_forLatex/scalability_1" ---: 
-ARI_SPkerAHC = function(m)
-{ 
-  s = 0.8
-  filt.id=which(Sx>=s)
-  si=Si[filt.id]
-  sj=Sj[filt.id]
-  sx=Sx[filt.id]
-  SIZE_af = object.size(si)+object.size(sj)+object.size(sx)
-  per_del = 1.0 - as.numeric(SIZE_af)/as.numeric(SIZE_bf)
-  start = proc.time()
-  dend = sp_kernel_ahc(si,sj,sx,Sd,m)
-  dur = proc.time() - start
-  pre_tags = convert_dend(dend,list_id,k)
-  ARI = adjustedRandIndex(lb, pre_tags)
-  return(cbind(s=s, m=m, per_del=per_del, ARI=ARI, SIZE=as.numeric(SIZE_af)/1000000,dur=as.numeric(dur[3])))
-}
