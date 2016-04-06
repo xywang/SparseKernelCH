@@ -1,0 +1,6 @@
+This is an R implementation of SparseKernekHC,
+a new expression of Lance-Williams formula.
+
+In SparseKernelHC, inner product based similarities are
+employed in Hierarchical Clustering algorithms.
+
